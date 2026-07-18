@@ -28,5 +28,7 @@
     "__pycache__": true
   },
 
-  "yaml.format.enable": true
+  "yaml.format.enable": true,
+  "cursorpyright.analysis.autoImportCompletions": true,
+  "cursorpyright.analysis.typeCheckingMode": "basic"
 }
