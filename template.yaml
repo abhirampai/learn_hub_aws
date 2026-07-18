@@ -17,20 +17,21 @@ Globals:
   Api:
     TracingEnabled: true
 Resources:
-  HelloWorldFunction:
+  HealthFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
+      CodeUri: src/
+      Handler: handlers.health.lambda_handler
       Runtime: python3.14
       Architectures:
       - x86_64
       Events:
-        HelloWorld:
+        Health:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /hello
+            Path: /health
             Method: get
+
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -49,13 +50,13 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World
+  HealthApi:
+    Description: API Gateway endpoint URL for Prod stage for Health
       function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/"
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/health/"
+  HealthFunction:
+    Description: Health Lambda Function ARN
+    Value: !GetAtt HealthFunction.Arn
+  HealthFunctionIamRole:
+    Description: Implicit IAM Role created for Health function
+    Value: !GetAtt HealthFunctionRole.Arn
