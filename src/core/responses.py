@@ -19,10 +19,10 @@ def error(
     }
 
 
-def validation_error(error_value, field, validation_type="INVALID_VALUE"):
-    match validation_type:
-        case "INVALID_VALUE":
-            return {
-                "valid": False,
-                "error_message": f"validation failed '{error_value}' not a valid value for {field}",
-            }
+def validation_error(errors):
+    return {
+        "statusCode": 422,
+        "body": json.dumps({"errors": json.loads(errors)}),
+        "headers": {"Content-Type": "application/json"},
+    }
+
