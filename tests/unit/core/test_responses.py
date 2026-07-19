@@ -83,6 +83,4 @@ def test_validation_error_serializes_non_json_values_as_strings() -> None:
     response = validation_error([{"loc": ["created_at"], "input": invalid_value}])
 
     details = json.loads(response["body"])["error"]["details"]
-    assert details == [
-        {"loc": ["created_at"], "input": "2026-07-19 12:30:00+00:00"}
-    ]
+    assert details == [{"loc": ["created_at"], "input": "2026-07-19 12:30:00+00:00"}]

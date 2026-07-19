@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 VERSION_FILE = Path(__file__).resolve().parent.parent / "VERSION"
 
 

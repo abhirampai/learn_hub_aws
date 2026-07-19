@@ -1,6 +1,9 @@
 import os
+
 import boto3
 from botocore.exceptions import ClientError
+
+from core.constants import COURSE_ENTITY_TYPE, COURSE_METADATA_SORT_KEY
 from core.exceptions import DuplicateCourseError
 
 _TABLE_NAME = os.environ["TABLE_NAME"]
@@ -14,7 +17,7 @@ class CourseRepository:
     def create(self, course: dict) -> dict:
         item = {
             "PK": f"COURSE#{course['slug']}",
-            "SK": "METADATA",
+            "SK": COURSE_METADATA_SORT_KEY,
             "id": course["id"],
             "title": course["title"],
             "description": course["description"],
@@ -25,8 +28,7 @@ class CourseRepository:
             "created_at": course["created_at"],
             "updated_at": course["updated_at"],
             "slug": course["slug"],
-            "thumbnail_url": course["thumbnail_url"],
-            "entity_type": "COURSE",
+            "entity_type": COURSE_ENTITY_TYPE,
             "GSI1PK": f"STATUS#{course['status']}",
             "GSI1SK": (f"CREATED_AT#{course['created_at']}#COURSE#{course['slug']}"),
             "GSI2PK": f"DIFFICULTY#{course['difficulty']}",

@@ -1,15 +1,17 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from core.constants import CourseDifficulty
 
 NonEmptyString = Annotated[str, Field(min_length=1)]
 
 
 class CreateCourseRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-    title: str
-    description: str
+    title: NonEmptyString
+    description: NonEmptyString
 
-    difficulty: Literal["beginner", "intermediate", "advanced"]
+    difficulty: CourseDifficulty
 
     tags: list[NonEmptyString] = Field(default_factory=list)

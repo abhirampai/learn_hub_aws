@@ -109,8 +109,7 @@ def test_course_schema_rejects_invalid_tag_types(tags) -> None:
 
 def test_course_schema_validates_json_input() -> None:
     request = CreateCourseRequest.model_validate_json(
-        '{"title":"AWS","description":"Cloud basics",'
-        '"difficulty":"beginner","tags":["cloud"]}'
+        '{"title":"AWS","description":"Cloud basics","difficulty":"beginner","tags":["cloud"]}'
     )
 
     assert request.title == "AWS"

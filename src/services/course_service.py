@@ -1,6 +1,8 @@
+from datetime import UTC, datetime
 from uuid import uuid4
+
+from core.constants import COURSE_STATUS_DRAFT
 from utils.slugify import slugify
-from datetime import datetime, UTC
 
 
 class CourseService:
@@ -17,7 +19,7 @@ class CourseService:
             "tags": payload.get("tags", []),
             "slug": slugify(payload["title"]),
             "thumbnail_url": None,
-            "status": "draft",
+            "status": COURSE_STATUS_DRAFT,
             "created_at": now,
             "updated_at": now,
         }
