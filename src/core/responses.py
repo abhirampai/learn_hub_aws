@@ -31,9 +31,10 @@ def validation_error(errors):
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": "The request is invalid.",
-                    "details": json.loads(errors),
+                    "details": errors,
                 }
-            }
+            },
+            default=str,
         ),
         "headers": {"Content-Type": "application/json"},
     }
