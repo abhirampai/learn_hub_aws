@@ -13,9 +13,11 @@ def lambda_handler(event, context):
     return {
         "statusCode": 200,
         "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({
-            "status": "ok",
-            "service": "Learn Hub",
-            "version": read_version(),
-        }),
+        "body": json.dumps(
+            {
+                "status": "ok",
+                "service": "Learn Hub",
+                "version": read_version(),
+            }
+        ),
     }
