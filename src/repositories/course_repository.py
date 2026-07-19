@@ -1,15 +1,7 @@
 import os
-import uuid
 import boto3
 from botocore.exceptions import ClientError
 from core.exceptions import DuplicateCourseError
-
-print(
-    {
-        "table": os.environ.get("TABLE_NAME"),
-        "region": boto3.session.Session().region_name,
-    }
-)
 
 _TABLE_NAME = os.environ["TABLE_NAME"]
 
@@ -23,7 +15,7 @@ class CourseRepository:
         item = {
             "PK": f"COURSE#{course['slug']}",
             "SK": "METADATA",
-            "id": uuid.uuid4(),
+            "id": course["id"],
             "title": course["title"],
             "description": course["description"],
             "difficulty": course["difficulty"],
@@ -34,10 +26,11 @@ class CourseRepository:
             "updated_at": course["updated_at"],
             "slug": course["slug"],
             "thumbnail_url": course["thumbnail_url"],
+            "entity_type": "COURSE",
             "GSI1PK": f"STATUS#{course['status']}",
-            "GSI1SK": (f"CREATED_AT#{course['created_at']}#Course#{course['slug']}"),
-            "GSI2PK": f"Difficulty#{course['difficulty']}",
-            "GSI2SK": (f"CREATED_AT#{course['created_at']}#Course#{course['slug']}"),
+            "GSI1SK": (f"CREATED_AT#{course['created_at']}#COURSE#{course['slug']}"),
+            "GSI2PK": f"DIFFICULTY#{course['difficulty']}",
+            "GSI2SK": (f"CREATED_AT#{course['created_at']}#COURSE#{course['slug']}"),
         }
 
         try:
@@ -46,7 +39,7 @@ class CourseRepository:
                 ConditionExpression=("attribute_not_exists(PK) AND attribute_not_exists(SK)"),
             )
         except ClientError as exc:
-            error_code = exec.response["Error"]["Code"]
+            error_code = exc.response["Error"]["Code"]
 
             if error_code == "ConditionalCheckFailedException":
                 raise DuplicateCourseError(course["slug"]) from exc
@@ -54,8 +47,3 @@ class CourseRepository:
             raise
 
         return course
-
-    def exists_by_slug(self, slug) -> bool:
-        response = self.table.get_item(Key={"PK": f"COURSE#{slug}", "SK": "METADATA"})
-
-        return "Item" in response

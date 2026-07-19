@@ -16,7 +16,7 @@ def lambda_handler(event, context):
         payload = request.model_dump()
 
         course = course_service.create_course(payload)
-        return success(status_code=201, message=course)
+        return success(status_code=201, body=course)
     except ValidationError as exc:
         return validation_error(exc.json())
     except DuplicateCourseError:

@@ -1,10 +1,14 @@
 import json
+from typing import Any
 
 
-def success(status_code=200, message={"message": "Operation successfull"}):
+def success(status_code=200, body: dict[str, Any] | None = None):
+    if body is None:
+        body = {"message": "Operation successful"}
+
     return {
         "statusCode": status_code,
-        "body": json.dumps(message),
+        "body": json.dumps(body),
         "headers": {"Content-Type": "application/json"},
     }
 

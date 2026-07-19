@@ -1,3 +1,4 @@
+import uuid
 from core.exceptions import DuplicateCourseError
 from utils.slugify import slugify
 from datetime import datetime, UTC
@@ -9,6 +10,7 @@ class CourseService:
 
     def create_course(self, payload: dict) -> dict:
         course = {
+            "id": f"course_#{uuid.uuid4()}",
             "title": payload["title"],
             "description": payload["description"],
             "difficulty": payload["difficulty"],
@@ -19,9 +21,6 @@ class CourseService:
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
         }
-
-        if self.repository.exists_by_slug(course["slug"]):
-            raise DuplicateCourseError(course["slug"])
 
         self.repository.create(course)
         return course
