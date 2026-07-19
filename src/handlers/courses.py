@@ -1,8 +1,10 @@
 import json
 from core.responses import success, error, validation_error
+from repositories.course_repository import CourseRepository
 from services.course_service import CourseService
 
-course_service = CourseService()
+repository = CourseRepository()
+course_service = CourseService(repository)
 
 
 def validate_required_fields(payload):

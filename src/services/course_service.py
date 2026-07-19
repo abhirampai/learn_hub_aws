@@ -1,16 +1,12 @@
 from utils.slugify import slugify
 from datetime import datetime, UTC
 
-COURSES = []
-
-
 class CourseService:
-    def __init__(self) -> None:
-        self._courses = []
+    def __init__(self, repository) -> None:
+        self.repository = repository
 
     def create_course(self, payload: dict) -> dict:
         course = {
-            "id": f"course_{len(COURSES) + 1}",
             "title": payload["title"],
             "description": payload["description"],
             "difficulty": payload["difficulty"],
@@ -22,5 +18,5 @@ class CourseService:
             "updated_at": datetime.now(UTC).isoformat(),
         }
 
-        self._courses.append(course)
+        self.repository.create(course)
         return course
