@@ -26,6 +26,14 @@ def error(
 def validation_error(errors):
     return {
         "statusCode": 422,
-        "body": json.dumps({"errors": json.loads(errors)}),
+        "body": json.dumps(
+            {
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "The request is invalid.",
+                    "details": json.loads(errors),
+                }
+            }
+        ),
         "headers": {"Content-Type": "application/json"},
     }
