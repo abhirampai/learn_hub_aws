@@ -14,15 +14,15 @@ Globals:
     # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
     LoggingConfig:
       LogFormat: JSON
+    Runtime: python3.14
+    CodeUri: src/
   Api:
     TracingEnabled: true
 Resources:
   HealthFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: src/
       Handler: handlers.health.lambda_handler
-      Runtime: python3.14
       Architectures:
       - x86_64
       Events:
@@ -34,9 +34,13 @@ Resources:
   CoursesFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: src/
       Handler: handlers.courses.lambda_handler
-      Runtime: python3.14
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref LearnHubTable
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref LearnHubTable
       Architectures:
       - x86_64
       Events:
@@ -46,6 +50,52 @@ Resources:
             Path: /courses
             Method: post
 
+
+  LearnHubTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub learnhub-${AWS::StackName}
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: Range
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: Range
+          Projection:
+            ProjectionType: ALL
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
