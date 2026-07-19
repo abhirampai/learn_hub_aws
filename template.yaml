@@ -31,6 +31,20 @@ Resources:
           Properties:
             Path: /health
             Method: get
+  CoursesFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/
+      Handler: handlers.courses.lambda_handler
+      Runtime: python3.14
+      Architectures:
+      - x86_64
+      Events:
+        Courses:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /courses
+            Method: post
 
 
   ApplicationResourceGroup:
