@@ -1,3 +1,4 @@
+from core.exceptions import DuplicateCourseError
 from utils.slugify import slugify
 from datetime import datetime, UTC
 
@@ -17,6 +18,9 @@ class CourseService:
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
         }
+
+        if self.repository.exists_by_slug(course['slug']):
+            raise DuplicateCourseError(course['slug'])
 
         self.repository.create(course)
         return course

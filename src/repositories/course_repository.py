@@ -1,6 +1,11 @@
 import os
 import boto3
 
+print({
+    "table": os.environ.get("TABLE_NAME"),
+    "region": boto3.session.Session().region_name,
+})
+
 _TABLE_NAME = os.environ["TABLE_NAME"]
 
 class CourseRepository:
@@ -34,6 +39,19 @@ class CourseRepository:
             )
         }
 
-        self.table.put_item(Items=item)
+        self.table.put_item(Item=item)
 
         return course
+
+    def exists_by_slug(self, slug):
+        response = self.table.get_item(
+            Key={
+                "PK": f"COURSE#{slug}",
+                "SK": "METADATA"
+            }
+        )
+
+        if response.get('item'):
+            return True
+
+        return False
