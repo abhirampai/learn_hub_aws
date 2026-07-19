@@ -16,19 +16,18 @@ def lambda_handler(event, context):
         payload = request.model_dump()
 
         course = course_service.create_course(payload)
-        return success(status_code=201, message=json.dumps(course))
-    except ValidationError as exec:
-        return validation_error(exec.json())
-    except DuplicateCourseError as exec:
-        print(exec)
+        return success(status_code=201, message=course)
+    except ValidationError as exc:
+        return validation_error(exc.json())
+    except DuplicateCourseError:
         return error(
-            status_code=422,
-            error_code="DUPLICATE_RESOURCE",
-            message="Course already exists"
+            status_code=409,
+            error_code="COURSE_ALREADY_EXISTS",
+            message="A Course with this slug already exists.",
         )
     except json.JSONDecodeError:
         return error(
-            status_code=400,
+            status_code=422,
             error_code="INVALID_JSON",
             message="Request body must contain valid JSON.",
         )

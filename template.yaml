@@ -39,6 +39,8 @@ Resources:
         Variables:
           TABLE_NAME: !Ref LearnHubTable
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref LearnHubTable
         - DynamoDBWritePolicy:
             TableName: !Ref LearnHubTable
       Architectures:

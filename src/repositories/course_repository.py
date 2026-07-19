@@ -1,12 +1,18 @@
 import os
+import uuid
 import boto3
+from botocore.exceptions import ClientError
+from core.exceptions import DuplicateCourseError
 
-print({
-    "table": os.environ.get("TABLE_NAME"),
-    "region": boto3.session.Session().region_name,
-})
+print(
+    {
+        "table": os.environ.get("TABLE_NAME"),
+        "region": boto3.session.Session().region_name,
+    }
+)
 
 _TABLE_NAME = os.environ["TABLE_NAME"]
+
 
 class CourseRepository:
     def __init__(self):
@@ -17,6 +23,7 @@ class CourseRepository:
         item = {
             "PK": f"COURSE#{course['slug']}",
             "SK": "METADATA",
+            "id": uuid.uuid4(),
             "title": course["title"],
             "description": course["description"],
             "difficulty": course["difficulty"],
@@ -25,33 +32,30 @@ class CourseRepository:
             "status": course["status"],
             "created_at": course["created_at"],
             "updated_at": course["updated_at"],
-
+            "slug": course["slug"],
+            "thumbnail_url": course["thumbnail_url"],
             "GSI1PK": f"STATUS#{course['status']}",
-            "GSI1SK": (
-                f"CREATED_AT#{course['created_at']}#"
-                f"Course#{course['slug']}"
-            ),
-
+            "GSI1SK": (f"CREATED_AT#{course['created_at']}#Course#{course['slug']}"),
             "GSI2PK": f"Difficulty#{course['difficulty']}",
-            "GSI2SK": (
-                f"CREATED_AT#{course['created_at']}#"
-                f"Course#{course['slug']}"
-            )
+            "GSI2SK": (f"CREATED_AT#{course['created_at']}#Course#{course['slug']}"),
         }
 
-        self.table.put_item(Item=item)
+        try:
+            self.table.put_item(
+                Item=item,
+                ConditionExpression=("attribute_not_exists(PK) AND attribute_not_exists(SK)"),
+            )
+        except ClientError as exc:
+            error_code = exec.response["Error"]["Code"]
+
+            if error_code == "ConditionalCheckFailedException":
+                raise DuplicateCourseError(course["slug"]) from exc
+
+            raise
 
         return course
 
-    def exists_by_slug(self, slug):
-        response = self.table.get_item(
-            Key={
-                "PK": f"COURSE#{slug}",
-                "SK": "METADATA"
-            }
-        )
+    def exists_by_slug(self, slug) -> bool:
+        response = self.table.get_item(Key={"PK": f"COURSE#{slug}", "SK": "METADATA"})
 
-        if response.get('item'):
-            return True
-
-        return False
+        return "Item" in response

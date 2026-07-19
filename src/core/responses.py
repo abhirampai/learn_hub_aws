@@ -1,10 +1,10 @@
 import json
 
 
-def success(status_code=200, message=json.dumps({"message": "Operation successfull"})):
+def success(status_code=200, message={"message": "Operation successfull"}):
     return {
         "statusCode": status_code,
-        "body": message,
+        "body": json.dumps(message),
         "headers": {"Content-Type": "application/json"},
     }
 
@@ -21,8 +21,7 @@ def error(
 
 def validation_error(errors):
     return {
-        "statusCode": 400,
+        "statusCode": 422,
         "body": json.dumps({"errors": json.loads(errors)}),
         "headers": {"Content-Type": "application/json"},
     }
-
