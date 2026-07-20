@@ -99,6 +99,61 @@ Resources:
           Projection:
             ProjectionType: ALL
 
+  LearnHubUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub learnhub-${AWS::StackName}-users
+
+      UsernameAttributes:
+        - email
+
+      AutoVerifiedAttributes:
+        - email
+
+      UsernameConfiguration:
+        CaseSensitive: false
+
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          TemporaryPasswordValidityDays: 7
+
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+
+      MfaConfiguration: "OFF"
+
+      DeletionProtection: INACTIVE
+
+  LearnHubUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub learnhub-${AWS::StackName}-client
+      UserPoolId: !Ref LearnHubUserPool
+
+      GenerateSecret: false
+
+      PreventUserExistenceErrors: ENABLED
+
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 30
+
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -126,3 +181,15 @@ Outputs:
   HealthFunctionIamRole:
     Description: Implicit IAM Role created for Health function
     Value: !GetAtt HealthFunctionRole.Arn
+
+  LearnHubUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref LearnHubUserPool
+
+  LearnHubUserPoolArn:
+    Description: Cognito User Pool Arn
+    Value: !GetAtt LearnHubUserPool.Arn
+
+  LearnHubUserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref LearnHubUserPoolClient
