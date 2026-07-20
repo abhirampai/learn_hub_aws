@@ -18,6 +18,12 @@ Globals:
     CodeUri: src/
   Api:
     TracingEnabled: true
+    Auth:
+      DefaultAuthorizer: CognitoAuthorizer
+
+      Authorizers:
+        CognitoAuthorizer:
+          UserPoolArn: !GetAtt LearnHubUserPool.Arn
 Resources:
   HealthFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -31,6 +37,9 @@ Resources:
           Properties:
             Path: /health
             Method: get
+
+            Auth:
+              Authorizer: NONE
   CoursesFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -51,6 +60,10 @@ Resources:
           Properties:
             Path: /courses
             Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+              AuthorizationScopes:
+                - aws.cognito.signin.user.admin
 
 
   LearnHubTable:
