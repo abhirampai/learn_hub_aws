@@ -245,3 +245,5 @@ $RECYCLE.BIN/
 
 .aws-sam
 .ruff_cache
+
+.env.development
