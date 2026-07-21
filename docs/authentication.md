@@ -51,3 +51,53 @@ Application User
 Authorization
 
 - LearnHub
+
+## LearnHub User
+
+PK = USER#{sub}
+
+SK = PROFILE
+
+Fields
+
+- id
+- cognito_sub
+- email
+- display_name
+- role
+- status
+- avatar_url
+- created_at
+- updated_at
+
+## Application User Provisioning
+
+Flow:
+
+Cognito Post Confirmation
+- Publisher lambda
+- EventBridge
+- SQS
+- Provision user lambda
+- DynamoDB
+
+### Domain event
+
+Source: learnhub.identity
+Detail type: UserConfirmed
+
+Schema:
+- schema_version
+- user_sub
+- email
+- confirmed_at
+
+### Delivery guarantees
+
+The consumer must be idempotent because events may be delivered more than once.
+
+### Failure handling
+
+Failed messages are retried by SQS
+
+Messages that repeatedly fail are moved to dead-letter queue.

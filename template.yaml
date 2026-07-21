@@ -126,6 +126,9 @@ Resources:
       UsernameConfiguration:
         CaseSensitive: false
 
+      LambdaConfig:
+        PostConfirmation: !GetAtt PostConfirmationPublisherFunction.Arn
+
       Policies:
         PasswordPolicy:
           MinimumLength: 12
@@ -167,6 +170,20 @@ Resources:
         AccessToken: minutes
         IdToken: minutes
         RefreshToken: days
+
+  LearnHubEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: learnhub
+
+  PostConfirmationPublisherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.post_confirmation.lambda_handler
+      Policies:
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref LearnHubEventBus
+
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
