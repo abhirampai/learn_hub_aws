@@ -184,6 +184,13 @@ Resources:
         - EventBridgePutEventsPolicy:
             EventBusName: !Ref LearnHubEventBus
 
+  PostConfirmationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PostConfirmationPublisherFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt LearnHubUserPool.Arn
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
