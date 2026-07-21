@@ -4,15 +4,14 @@ from typing import Any
 import boto3
 from botocore.exceptions import ClientError
 
-_TABLE_NAME = os.environ["TABLE_NAME"]
-
 
 class UserRepository:
     def __init__(self):
+        table_name = os.environ["TABLE_NAME"]
         dynamodb = boto3.resource("dynamodb")
-        self.table = dynamodb.Table(_TABLE_NAME)
+        self.table = dynamodb.Table(table_name)
 
-    def create_if_absent(self, user: dict[str, Any]):
+    def create_if_absent(self, user: dict[str, Any]) -> None:
         item = {
             "PK": f"USER#{user['cognito_sub']}",
             "SK": "PROFILE",
@@ -37,11 +36,9 @@ class UserRepository:
             error_code = exc.response["Error"]["Code"]
 
             if error_code == "ConditionalCheckFailedException":
-                return user
+                return
 
             raise
-
-        return user
 
     def find_by_sub(self, sub: str):
         response = self.table.get_item(

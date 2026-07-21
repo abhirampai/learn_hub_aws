@@ -10,7 +10,7 @@ class UserProvisioningService:
     def provision(
         self,
         detail: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> None:
         now = datetime.now(UTC).isoformat()
 
         user = {

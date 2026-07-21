@@ -13,6 +13,13 @@ service = UserProvisioningService(repository)
 
 def process_record(record: dict[str, Any]) -> None:
     eventbridge_event = json.loads(record["body"])
+
+    if eventbridge_event.get("source") != "learnhub.identity":
+        raise ValueError("Unexpected event source")
+
+    if eventbridge_event.get("detail-type") != "UserConfirmed":
+        raise ValueError("Unexpected event type")
+
     detail = eventbridge_event["detail"]
 
     if detail.get("schema_version") != 1:
@@ -29,7 +36,7 @@ def lambda_handler(
 ) -> dict[str, list[dict[str, str]]]:
     batch_item_failures: list[dict[str, str]] = []
 
-    for record in event["Records"]:
+    for record in event.get("Records", []):
         try:
             process_record(record)
         except Exception:

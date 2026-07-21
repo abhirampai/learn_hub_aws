@@ -205,6 +205,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Sub learnhub-${AWS::StackName}-user-provisioning
+      SqsManagedSseEnabled: true
 
       VisibilityTimeout: 60
 
@@ -317,3 +318,11 @@ Outputs:
   LearnHubUserPoolClientId:
     Description: Cognito App Client ID
     Value: !Ref LearnHubUserPoolClient
+
+  UserProvisioningQueueUrl:
+    Description: User provisioning queue URL
+    Value: !Ref UserProvisioningQueue
+
+  UserProvisioningDeadLetterQueueUrl:
+    Description: User provisioning DLQ URL
+    Value: !Ref UserProvisioningDeadLetterQueue

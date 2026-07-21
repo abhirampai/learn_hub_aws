@@ -32,12 +32,12 @@ def error(
     status_code: int = 404,
     error_code: str = DEFAULT_ERROR_CODE,
     message: str = DEFAULT_ERROR_MESSAGE,
-    headers: dict[str, str] | None = None
+    headers: dict[str, str] | None = None,
 ) -> LambdaResponse:
     return {
         "statusCode": status_code,
         "body": json.dumps({"error": {"code": error_code, "message": message}}),
-        "headers": { **JSON_HEADERS.copy(), **(headers or {}) },
+        "headers": {**JSON_HEADERS.copy(), **(headers or {})},
     }
 
 

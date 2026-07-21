@@ -6,13 +6,12 @@ from botocore.exceptions import ClientError
 from core.constants import COURSE_ENTITY_TYPE, COURSE_METADATA_SORT_KEY
 from core.exceptions import DuplicateCourseError
 
-_TABLE_NAME = os.environ["TABLE_NAME"]
-
 
 class CourseRepository:
     def __init__(self):
+        table_name = os.environ["TABLE_NAME"]
         dynamodb = boto3.resource("dynamodb")
-        self.table = dynamodb.Table(_TABLE_NAME)
+        self.table = dynamodb.Table(table_name)
 
     def create(self, course: dict) -> dict:
         item = {
