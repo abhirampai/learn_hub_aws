@@ -195,6 +195,89 @@ Resources:
       Principal: cognito-idp.amazonaws.com
       SourceArn: !GetAtt LearnHubUserPool.Arn
 
+  UserProvisioningDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub learnhub-${AWS::StackName}-user-provisioning-dlq
+      MessageRetentionPeriod: 1209600
+
+  UserProvisioningQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub learnhub-${AWS::StackName}-user-provisioning
+
+      VisibilityTimeout: 60
+
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt UserProvisioningDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  UserConfirmedRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub learnhub-${AWS::StackName}-user-confirmed
+      EventBusName: !Ref LearnHubEventBus
+
+      EventPattern:
+        source:
+          - learnhub.identity
+
+        detail-type:
+          - UserConfirmed
+
+      Targets:
+        - Id: UserProvisioningQueue
+          Arn: !GetAtt UserProvisioningQueue.Arn
+
+  UserProvisioningQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref UserProvisioningQueue
+
+      PolicyDocument:
+        Version: "2012-10-17"
+
+        Statement:
+          - Sid: AllowEventBridgeToSendMessages
+
+            Effect: Allow
+
+            Principal:
+              Service: events.amazonaws.com
+
+            Action:
+              - sqs:SendMessage
+
+            Resource: !GetAtt UserProvisioningQueue.Arn
+
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt UserConfirmedRule.Arn
+
+  ProvisionUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.provision_user.lambda_handler
+      Timeout: 10
+
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref LearnHubTable
+
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref LearnHubTable
+
+      Events:
+        UserProvisioning:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt UserProvisioningQueue.Arn
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:

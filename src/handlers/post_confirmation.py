@@ -11,6 +11,7 @@ _EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
 
 events = boto3.client("events")
 
+
 def build_user_confirmed_detail(event):
     user_attributes = event["request"]["userAttributes"]
 
