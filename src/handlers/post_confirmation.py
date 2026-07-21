@@ -7,11 +7,11 @@ import boto3
 
 logger = logging.getLogger(__name__)
 
-_EVENT_BUS_NAME = os.environ["EventBusName"]
+_EVENT_BUS_NAME = os.environ["EVENT_BUS_NAME"]
 
 events = boto3.client("events")
 
-def get_user_detail(event):
+def build_user_confirmed_detail(event):
     user_attributes = event["request"]["userAttributes"]
 
     detail = {
@@ -28,23 +28,21 @@ def get_user_detail(event):
 
 
 def lambda_handler(event, context):
-    try:
-        user_detail = get_user_detail(event)
+    user_detail = build_user_confirmed_detail(event)
 
-        response = events.put_events(
-            Entries=[
-                {
-                    "Source": "learnhub.identity",
-                    "DetailType": "UserConfirmed",
-                    "EventBusName": _EVENT_BUS_NAME,
-                    "Detail": json.dumps(user_detail),
-                }
-            ]
-        )
+    response = events.put_events(
+        Entries=[
+            {
+                "Source": "learnhub.identity",
+                "DetailType": "UserConfirmed",
+                "EventBusName": _EVENT_BUS_NAME,
+                "Detail": json.dumps(user_detail),
+            }
+        ]
+    )
 
-        if response.get("FailedEntryCount", 0) > 0:
-            logger.error("Failed to publish user confirmation event: %s", response)
-    except Exception:
-        logger.exception("Error while handling user confirmation")
+    if response.get("FailedEntryCount", 0) > 0:
+        logger.error("Failed to publish user confirmation event: %s", response)
+        raise RuntimeError("Failed to publish UserConfirmed event")
 
     return event

@@ -180,6 +180,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handlers.post_confirmation.lambda_handler
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !Ref LearnHubEventBus
       Policies:
         - EventBridgePutEventsPolicy:
             EventBusName: !Ref LearnHubEventBus
