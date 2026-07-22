@@ -1,6 +1,6 @@
 import json
 
-from src.handlers import health
+from handlers import health
 
 
 def test_health_handler_returns_application_version():

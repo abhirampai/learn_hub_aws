@@ -3,7 +3,8 @@ import pytest
 from core.exceptions import DuplicateCourseError, ForbiddenActionError
 from models.authenticated_user import AuthenticatedUser
 from services.course_service import CourseService
-from tests.fakes.fake_course_repository import FakeCourseRepository
+
+from ...fakes.fake_course_repository import FakeCourseRepository
 
 
 @pytest.fixture

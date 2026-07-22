@@ -48,9 +48,7 @@ def current_user() -> AuthenticatedUser:
     )
 
 
-def test_create_course_returns_created_course(
-    event: dict, current_user: AuthenticatedUser
-) -> None:
+def test_create_course_returns_created_course(event: dict, current_user: AuthenticatedUser) -> None:
     authentication_service = Mock()
     authentication_service.authenticate.return_value = current_user
     course_service = Mock()
