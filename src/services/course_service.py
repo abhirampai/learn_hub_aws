@@ -9,10 +9,11 @@ class CourseService:
     def __init__(self, repository) -> None:
         self.repository = repository
 
-    def create_course(self, payload: dict) -> dict:
+    def create_course(self, current_user, payload: dict) -> dict:
         now = datetime.now(UTC).isoformat()
         course = {
             "id": f"course_{uuid4()}",
+            "created_by": current_user.id,
             "title": payload["title"],
             "description": payload["description"],
             "difficulty": payload["difficulty"],

@@ -18,6 +18,7 @@ class CourseRepository:
             "PK": f"COURSE#{course['slug']}",
             "SK": COURSE_METADATA_SORT_KEY,
             "id": course["id"],
+            "created_by": course["created_by"],
             "title": course["title"],
             "description": course["description"],
             "difficulty": course["difficulty"],

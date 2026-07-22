@@ -3,7 +3,7 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class CurrentUser:
+class CognitoIdentity:
     sub: str
     email: str | None = None
 
@@ -11,7 +11,7 @@ class CurrentUser:
     def from_event(
         cls,
         event: dict[str, Any],
-    ) -> "CurrentUser":
+    ) -> "CognitoIdentity":
         claims = event["requestContext"]["authorizer"]["claims"]
 
         return cls(
