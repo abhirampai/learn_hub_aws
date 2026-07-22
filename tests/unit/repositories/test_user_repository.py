@@ -73,9 +73,7 @@ def test_find_by_sub_returns_item(repository: UserRepository, table: Mock) -> No
 
     result = repository.find_by_sub("cognito-sub-123")
 
-    table.get_item.assert_called_once_with(
-        Key={"PK": "USER#cognito-sub-123", "SK": "PROFILE"}
-    )
+    table.get_item.assert_called_once_with(Key={"PK": "USER#cognito-sub-123", "SK": "PROFILE"})
     assert result is item
 
 
@@ -84,7 +82,5 @@ def test_find_by_sub_returns_none(repository: UserRepository, table: Mock) -> No
 
     result = repository.find_by_sub("missing-sub")
 
-    table.get_item.assert_called_once_with(
-        Key={"PK": "USER#missing-sub", "SK": "PROFILE"}
-    )
+    table.get_item.assert_called_once_with(Key={"PK": "USER#missing-sub", "SK": "PROFILE"})
     assert result is None

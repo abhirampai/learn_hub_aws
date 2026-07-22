@@ -1,6 +1,6 @@
 import pytest
 
-from core.exceptions import DuplicateCourseError
+from core.exceptions import DuplicateCourseError, ForbiddenActionError
 from models.authenticated_user import AuthenticatedUser
 from services.course_service import CourseService
 from tests.fakes.fake_course_repository import FakeCourseRepository
@@ -41,11 +41,11 @@ def test_create_course_stores_and_returns_course(
             "description": "Learn the AWS fundamentals.",
             "difficulty": "beginner",
             "tags": ["aws", "cloud"],
-        }
+        },
     )
 
     assert course["id"].startswith("course_")
-    assert course["created_by"] == current_user.id
+    assert course["instructor_id"] == current_user.id
     assert course["slug"] == "introduction-to-aws"
     assert course["status"] == "draft"
     assert course["thumbnail_url"] is None
@@ -62,10 +62,32 @@ def test_create_course_uses_empty_tags_when_omitted(
             "title": "AWS Basics",
             "description": "Learn the basics.",
             "difficulty": "beginner",
-        }
+        },
     )
 
     assert course["tags"] == []
+
+
+def test_create_course_rejects_user_without_creator_role(
+    service: CourseService,
+    repository: FakeCourseRepository,
+    current_user: AuthenticatedUser,
+) -> None:
+    current_user.role = "student"
+
+    with pytest.raises(ForbiddenActionError) as exc_info:
+        service.create_course(
+            current_user,
+            {
+                "title": "AWS Basics",
+                "description": "Learn the basics.",
+                "difficulty": "beginner",
+            },
+        )
+
+    assert exc_info.value.action == "create"
+    assert exc_info.value.resource == "course"
+    assert repository.courses_by_slug == {}
 
 
 @pytest.mark.parametrize(
@@ -92,7 +114,7 @@ def test_create_course_normalizes_title_into_slug(
             "title": title,
             "description": "Learn the AWS fundamentals.",
             "difficulty": "beginner",
-        }
+        },
     )
 
     assert course["slug"] == expected_slug
@@ -121,9 +143,7 @@ def test_create_course_rejects_differently_formatted_title_with_same_slug(
         "description": "Learn the AWS fundamentals.",
         "difficulty": "beginner",
     }
-    service.create_course(
-        current_user, {**payload, "title": "AWS Cloud Fundamentals"}
-    )
+    service.create_course(current_user, {**payload, "title": "AWS Cloud Fundamentals"})
 
     with pytest.raises(DuplicateCourseError) as exc_info:
         service.create_course(

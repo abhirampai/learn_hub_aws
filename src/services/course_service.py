@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from core.constants import COURSE_STATUS_DRAFT
+from policies.course_policy import CoursePolicy
 from utils.slugify import slugify
 
 
@@ -10,10 +11,13 @@ class CourseService:
         self.repository = repository
 
     def create_course(self, current_user, payload: dict) -> dict:
+        CoursePolicy(current_user).authorize_create()
+
         now = datetime.now(UTC).isoformat()
+
         course = {
             "id": f"course_{uuid4()}",
-            "created_by": current_user.id,
+            "instructor_id": current_user.id,
             "title": payload["title"],
             "description": payload["description"],
             "difficulty": payload["difficulty"],

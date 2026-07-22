@@ -7,9 +7,11 @@ from core.constants import (
     COURSE_ALREADY_EXISTS_CODE,
     COURSE_ALREADY_EXISTS_MESSAGE,
     DEFAULT_ERROR_CODE,
+    FORBIDDEN_ACTION_CODE,
+    FORBIDDEN_ACTION_MESSAGE,
     INVALID_JSON_MESSAGE,
 )
-from core.exceptions import DuplicateCourseError
+from core.exceptions import DuplicateCourseError, ForbiddenActionError
 from core.responses import error, success, validation_error
 from repositories.course_repository import CourseRepository
 from repositories.user_repository import UserRepository
@@ -41,6 +43,12 @@ def lambda_handler(event, context):
             status_code=409,
             error_code=COURSE_ALREADY_EXISTS_CODE,
             message=COURSE_ALREADY_EXISTS_MESSAGE,
+        )
+    except ForbiddenActionError:
+        return error(
+            status_code=403,
+            error_code=FORBIDDEN_ACTION_CODE,
+            message=FORBIDDEN_ACTION_MESSAGE,
         )
     except json.JSONDecodeError:
         return error(

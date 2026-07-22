@@ -12,6 +12,9 @@ INVALID_JSON_MESSAGE: Final = "Request body must contain valid JSON."
 COURSE_ALREADY_EXISTS_CODE: Final = "COURSE_ALREADY_EXISTS"
 COURSE_ALREADY_EXISTS_MESSAGE: Final = "A Course with this slug already exists."
 
+FORBIDDEN_ACTION_CODE: Final = "FORBIDDEN"
+FORBIDDEN_ACTION_MESSAGE: Final = "You are not allowed to carry out this action."
+
 CourseDifficulty = Literal["beginner", "intermediate", "advanced"]
 COURSE_STATUS_DRAFT: Final = "draft"
 COURSE_ENTITY_TYPE: Final = "COURSE"

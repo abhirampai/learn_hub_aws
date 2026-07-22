@@ -15,7 +15,7 @@ from repositories.course_repository import CourseRepository  # noqa: E402
 def course() -> dict:
     return {
         "id": "course_123",
-        "created_by": "user_123",
+        "instructor_id": "user_123",
         "title": "AWS Fundamentals",
         "description": "Learn the AWS fundamentals.",
         "difficulty": "beginner",
@@ -70,7 +70,7 @@ def test_create_writes_course_item_conditionally(
             "PK": "COURSE#aws-fundamentals",
             "SK": "METADATA",
             "id": "course_123",
-            "created_by": "user_123",
+            "instructor_id": "user_123",
             "title": "AWS Fundamentals",
             "description": "Learn the AWS fundamentals.",
             "difficulty": "beginner",

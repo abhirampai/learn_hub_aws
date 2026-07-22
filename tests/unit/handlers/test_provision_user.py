@@ -29,9 +29,7 @@ def test_processes_valid_user_confirmed_record() -> None:
     service = Mock()
 
     with patch.object(provision_user, "service", service):
-        result = provision_user.lambda_handler(
-            {"Records": [sqs_record("message-1")]}, None
-        )
+        result = provision_user.lambda_handler({"Records": [sqs_record("message-1")]}, None)
 
     service.provision.assert_called_once_with(
         {
@@ -62,9 +60,7 @@ def test_returns_one_batch_failure_when_one_message_fails() -> None:
     service.provision.side_effect = RuntimeError("provisioning failed")
 
     with patch.object(provision_user, "service", service):
-        result = provision_user.lambda_handler(
-            {"Records": [sqs_record("message-1")]}, None
-        )
+        result = provision_user.lambda_handler({"Records": [sqs_record("message-1")]}, None)
 
     assert result == {
         "batchItemFailures": [{"itemIdentifier": "message-1"}],
