@@ -1,71 +1,112 @@
 import json
+import os
+from unittest.mock import Mock, patch
 
 import pytest
-from hello_world import app
+
+from core.exceptions import DuplicateCourseError, ForbiddenActionError
+from models.authenticated_user import AuthenticatedUser
+
+os.environ.setdefault("TABLE_NAME", "learn-hub-test")
+
+with patch("boto3.resource"):
+    from handlers import courses
 
 
-@pytest.fixture()
-def apigw_event():
-    """Generates API GW Event"""
-
+@pytest.fixture
+def event() -> dict:
     return {
-        "body": '{ "test": "body"}',
-        "resource": "/{proxy+}",
+        "body": json.dumps(
+            {
+                "title": "AWS Fundamentals",
+                "description": "Learn the AWS fundamentals.",
+                "difficulty": "beginner",
+                "tags": ["aws", "cloud"],
+            }
+        ),
         "requestContext": {
-            "resourceId": "123456",
-            "apiId": "1234567890",
-            "resourcePath": "/{proxy+}",
-            "httpMethod": "POST",
-            "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
-            "accountId": "123456789012",
-            "identity": {
-                "apiKey": "",
-                "userArn": "",
-                "cognitoAuthenticationType": "",
-                "caller": "",
-                "userAgent": "Custom User Agent String",
-                "user": "",
-                "cognitoIdentityPoolId": "",
-                "cognitoIdentityId": "",
-                "cognitoAuthenticationProvider": "",
-                "sourceIp": "127.0.0.1",
-                "accountId": "",
-            },
-            "stage": "prod",
+            "authorizer": {
+                "claims": {
+                    "sub": "cognito-sub-123",
+                    "email": "instructor@example.com",
+                }
+            }
         },
-        "queryStringParameters": {"foo": "bar"},
-        "headers": {
-            "Via": "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)",
-            "Accept-Language": "en-US,en;q=0.8",
-            "CloudFront-Is-Desktop-Viewer": "true",
-            "CloudFront-Is-SmartTV-Viewer": "false",
-            "CloudFront-Is-Mobile-Viewer": "false",
-            "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
-            "CloudFront-Viewer-Country": "US",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Upgrade-Insecure-Requests": "1",
-            "X-Forwarded-Port": "443",
-            "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
-            "X-Forwarded-Proto": "https",
-            "X-Amz-Cf-Id": "aaaaaaaaaae3VYQb9jd-nvCd-de396Uhbp027Y2JvkCPNLmGJHqlaA==",
-            "CloudFront-Is-Tablet-Viewer": "false",
-            "Cache-Control": "max-age=0",
-            "User-Agent": "Custom User Agent String",
-            "CloudFront-Forwarded-Proto": "https",
-            "Accept-Encoding": "gzip, deflate, sdch",
-        },
-        "pathParameters": {"proxy": "/examplepath"},
-        "httpMethod": "POST",
-        "stageVariables": {"baz": "qux"},
-        "path": "/examplepath",
     }
 
 
-def test_lambda_handler(apigw_event):
+@pytest.fixture
+def current_user() -> AuthenticatedUser:
+    return AuthenticatedUser(
+        id="user_123",
+        cognito_sub="cognito-sub-123",
+        email="instructor@example.com",
+        display_name="Instructor",
+        role="instructor",
+        status="active",
+        avatar_url=None,
+    )
 
-    ret = app.lambda_handler(apigw_event, "")
-    data = json.loads(ret["body"])
 
-    assert ret["statusCode"] == 200
-    assert "message" in ret["body"]
-    assert data["message"] == "hello world"
+def test_create_course_returns_created_course(
+    event: dict, current_user: AuthenticatedUser
+) -> None:
+    authentication_service = Mock()
+    authentication_service.authenticate.return_value = current_user
+    course_service = Mock()
+    course = {
+        "id": "course_123",
+        "instructor_id": "user_123",
+        "slug": "aws-fundamentals",
+    }
+    course_service.create_course.return_value = course
+
+    with (
+        patch.object(courses, "authentication_service", authentication_service),
+        patch.object(courses, "course_service", course_service),
+    ):
+        response = courses.lambda_handler(event, None)
+
+    identity = authentication_service.authenticate.call_args.args[0]
+    assert identity.sub == "cognito-sub-123"
+    assert identity.email == "instructor@example.com"
+    course_service.create_course.assert_called_once_with(
+        current_user=current_user,
+        payload={
+            "title": "AWS Fundamentals",
+            "description": "Learn the AWS fundamentals.",
+            "difficulty": "beginner",
+            "tags": ["aws", "cloud"],
+        },
+    )
+    assert response["statusCode"] == 201
+    assert json.loads(response["body"]) == course
+
+
+@pytest.mark.parametrize(
+    ("service_error", "status_code", "error_code"),
+    [
+        (DuplicateCourseError("aws-fundamentals"), 409, "COURSE_ALREADY_EXISTS"),
+        (ForbiddenActionError("create", "course"), 403, "FORBIDDEN"),
+    ],
+)
+def test_create_course_translates_domain_errors(
+    event: dict,
+    current_user: AuthenticatedUser,
+    service_error: Exception,
+    status_code: int,
+    error_code: str,
+) -> None:
+    authentication_service = Mock()
+    authentication_service.authenticate.return_value = current_user
+    course_service = Mock()
+    course_service.create_course.side_effect = service_error
+
+    with (
+        patch.object(courses, "authentication_service", authentication_service),
+        patch.object(courses, "course_service", course_service),
+    ):
+        response = courses.lambda_handler(event, None)
+
+    assert response["statusCode"] == status_code
+    assert json.loads(response["body"])["error"]["code"] == error_code

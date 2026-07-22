@@ -1,7 +1,7 @@
 import json
 import logging
-from datetime import UTC, datetime
 import os
+from datetime import UTC, datetime
 
 import boto3
 
