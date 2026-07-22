@@ -1,10 +1,11 @@
 import os
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
 
 from core.constants import COURSE_ENTITY_TYPE, COURSE_METADATA_SORT_KEY
-from core.exceptions import DuplicateCourseError
+from core.exceptions import CourseNotFoundError, DuplicateCourseError
 
 
 class CourseRepository:
@@ -14,7 +15,43 @@ class CourseRepository:
         self.table = dynamodb.Table(table_name)
 
     def create(self, course: dict) -> dict:
-        item = {
+        item = self._to_item(course)
+
+        try:
+            self.table.put_item(
+                Item=item,
+                ConditionExpression=("attribute_not_exists(PK) AND attribute_not_exists(SK)"),
+            )
+        except ClientError as exc:
+            error_code = exc.response["Error"]["Code"]
+
+            if error_code == "ConditionalCheckFailedException":
+                raise DuplicateCourseError(course["slug"]) from exc
+
+            raise
+
+        return course
+
+    def update(self, course: dict[str, Any]) -> dict[str, Any]:
+        item = self._to_item(course)
+
+        try:
+            self.table.put_item(
+                Item=item,
+                ConditionExpression=("attribute_exists(PK) AND attribute_exists(SK)"),
+            )
+        except ClientError as exc:
+            error_code = exc.response["Error"]["Code"]
+
+            if error_code == "ConditionalCheckFailedException":
+                raise CourseNotFoundError(course["slug"]) from exc
+
+            raise
+
+        return course
+
+    def _to_item(self, course: dict[str, Any]) -> dict[str, Any]:
+        return {
             "PK": f"COURSE#{course['slug']}",
             "SK": COURSE_METADATA_SORT_KEY,
             "id": course["id"],
@@ -35,17 +72,35 @@ class CourseRepository:
             "GSI2SK": (f"CREATED_AT#{course['created_at']}#COURSE#{course['slug']}"),
         }
 
-        try:
-            self.table.put_item(
-                Item=item,
-                ConditionExpression=("attribute_not_exists(PK) AND attribute_not_exists(SK)"),
-            )
-        except ClientError as exc:
-            error_code = exc.response["Error"]["Code"]
+    def _from_item(self, item: dict):
+        return {
+            "id": item["id"],
+            "instructor_id": item["instructor_id"],
+            "slug": item["slug"],
+            "title": item["title"],
+            "description": item["description"],
+            "difficulty": item["difficulty"],
+            "tags": item["tags"],
+            "thumbnail_url": item.get("thumbnail_url"),
+            "status": item["status"],
+            "created_at": item["created_at"],
+            "updated_at": item["updated_at"],
+        }
 
-            if error_code == "ConditionalCheckFailedException":
-                raise DuplicateCourseError(course["slug"]) from exc
+    def find_by_slug(
+        self,
+        slug: str,
+    ) -> dict[str, Any] | None:
+        response = self.table.get_item(
+            Key={
+                "PK": f"COURSE#{slug}",
+                "SK": "METADATA",
+            }
+        )
 
-            raise
+        item = response.get("Item")
 
-        return course
+        if item is None:
+            return None
+
+        return self._from_item(item)

@@ -65,6 +65,31 @@ Resources:
               AuthorizationScopes:
                 - aws.cognito.signin.user.admin
 
+  UpdateCourseFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.update_course.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref LearnHubTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref LearnHubTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref LearnHubTable
+      Architectures:
+      - x86_64
+      Events:
+        UpdateCourse:
+          Type: Api
+          Properties:
+            Path: /courses/{slug}
+            Method: put
+            Auth:
+              Authorizer: CognitoAuthorizer
+              AuthorizationScopes:
+                - aws.cognito.signin.user.admin
+
 
   LearnHubTable:
     Type: AWS::DynamoDB::Table

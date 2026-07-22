@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from botocore.exceptions import ClientError
 
-from core.exceptions import DuplicateCourseError
+from core.exceptions import CourseNotFoundError, DuplicateCourseError
 
 os.environ.setdefault("TABLE_NAME", "learn-hub-test")
 
@@ -111,5 +111,79 @@ def test_create_propagates_unexpected_client_error(
 
     with pytest.raises(ClientError) as exc_info:
         repository.create(course)
+
+    assert exc_info.value is error
+
+
+def test_find_by_slug_returns_course(
+    repository: CourseRepository, table: Mock, course: dict
+) -> None:
+    table.get_item.return_value = {
+        "Item": {
+            "PK": "COURSE#aws-fundamentals",
+            "SK": "METADATA",
+            "entity_type": "COURSE",
+            **course,
+        }
+    }
+
+    result = repository.find_by_slug("aws-fundamentals")
+
+    table.get_item.assert_called_once_with(
+        Key={"PK": "COURSE#aws-fundamentals", "SK": "METADATA"}
+    )
+    assert result == course
+
+
+def test_find_by_slug_returns_none_when_course_does_not_exist(
+    repository: CourseRepository, table: Mock
+) -> None:
+    table.get_item.return_value = {}
+
+    result = repository.find_by_slug("missing-course")
+
+    assert result is None
+
+
+def test_update_replaces_existing_course_conditionally(
+    repository: CourseRepository, table: Mock, course: dict
+) -> None:
+    updated_course = {
+        **course,
+        "description": "Updated description.",
+        "updated_at": "2026-07-22T10:00:00+00:00",
+    }
+
+    result = repository.update(updated_course)
+
+    call = table.put_item.call_args
+    assert call.kwargs["Item"]["description"] == "Updated description."
+    assert call.kwargs["Item"]["updated_at"] == "2026-07-22T10:00:00+00:00"
+    assert call.kwargs["ConditionExpression"] == (
+        "attribute_exists(PK) AND attribute_exists(SK)"
+    )
+    assert result is updated_course
+
+
+def test_update_translates_conditional_failure_to_not_found_error(
+    repository: CourseRepository, table: Mock, course: dict
+) -> None:
+    table.put_item.side_effect = client_error("ConditionalCheckFailedException")
+
+    with pytest.raises(CourseNotFoundError) as exc_info:
+        repository.update(course)
+
+    assert exc_info.value.args == ("aws-fundamentals",)
+    assert isinstance(exc_info.value.__cause__, ClientError)
+
+
+def test_update_propagates_unexpected_client_error(
+    repository: CourseRepository, table: Mock, course: dict
+) -> None:
+    error = client_error("ProvisionedThroughputExceededException")
+    table.put_item.side_effect = error
+
+    with pytest.raises(ClientError) as exc_info:
+        repository.update(course)
 
     assert exc_info.value is error

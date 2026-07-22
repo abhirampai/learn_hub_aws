@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from schemas.course import CreateCourseRequest
+from schemas.course import CreateCourseRequest, UpdateCourseRequest
 
 
 def valid_course_data(**overrides):
@@ -121,3 +121,59 @@ def test_course_schema_rejects_malformed_json() -> None:
         CreateCourseRequest.model_validate_json('{"title":')
 
     assert "json_invalid" in error_types(exc_info.value)
+
+
+def test_update_course_schema_accepts_partial_update() -> None:
+    request = UpdateCourseRequest.model_validate(
+        {
+            "description": "  Updated description.  ",
+            "tags": ["  aws  ", " updated "],
+        }
+    )
+
+    assert request.model_dump(exclude_unset=True) == {
+        "description": "Updated description.",
+        "tags": ["aws", "updated"],
+    }
+
+
+@pytest.mark.parametrize("field", ["title", "description", "difficulty", "tags"])
+def test_update_course_schema_tracks_only_provided_field(field: str) -> None:
+    values = {
+        "title": "Updated title",
+        "description": "Updated description.",
+        "difficulty": "advanced",
+        "tags": ["updated"],
+    }
+
+    request = UpdateCourseRequest.model_validate({field: values[field]})
+
+    assert request.model_dump(exclude_unset=True) == {field: values[field]}
+
+
+def test_update_course_schema_rejects_empty_update() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        UpdateCourseRequest.model_validate({})
+
+    assert "value_error" in error_types(exc_info.value)
+
+
+def test_update_course_schema_rejects_unknown_fields() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        UpdateCourseRequest.model_validate({"instructor_id": "another-user"})
+
+    assert "extra_forbidden" in error_types(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"title": ""},
+        {"description": "   "},
+        {"difficulty": "expert"},
+        {"tags": [""]},
+    ],
+)
+def test_update_course_schema_rejects_invalid_field_values(updates: dict) -> None:
+    with pytest.raises(ValidationError):
+        UpdateCourseRequest.model_validate(updates)

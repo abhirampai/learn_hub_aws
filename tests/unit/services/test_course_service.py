@@ -1,6 +1,10 @@
 import pytest
 
-from core.exceptions import DuplicateCourseError, ForbiddenActionError
+from core.exceptions import (
+    CourseNotFoundError,
+    DuplicateCourseError,
+    ForbiddenActionError,
+)
 from models.authenticated_user import AuthenticatedUser
 from services.course_service import CourseService
 
@@ -153,3 +157,96 @@ def test_create_course_rejects_differently_formatted_title_with_same_slug(
         )
 
     assert exc_info.value.slug == "aws-cloud-fundamentals"
+
+
+@pytest.fixture
+def stored_course(repository: FakeCourseRepository) -> dict:
+    course = {
+        "id": "course_123",
+        "instructor_id": "user_123",
+        "title": "AWS Fundamentals",
+        "description": "Learn the AWS fundamentals.",
+        "difficulty": "beginner",
+        "tags": ["aws"],
+        "slug": "aws-fundamentals",
+        "thumbnail_url": None,
+        "status": "draft",
+        "created_at": "2026-07-19T10:00:00+00:00",
+        "updated_at": "2026-07-19T10:00:00+00:00",
+    }
+    repository.courses_by_slug[course["slug"]] = course
+    return course
+
+
+def test_update_course_merges_updates_and_preserves_course_fields(
+    service: CourseService,
+    repository: FakeCourseRepository,
+    current_user: AuthenticatedUser,
+    stored_course: dict,
+) -> None:
+    result = service.update_course(
+        current_user=current_user,
+        slug="aws-fundamentals",
+        updates={
+            "description": "Updated description.",
+            "difficulty": "intermediate",
+        },
+    )
+
+    assert result["description"] == "Updated description."
+    assert result["difficulty"] == "intermediate"
+    assert result["id"] == stored_course["id"]
+    assert result["instructor_id"] == stored_course["instructor_id"]
+    assert result["slug"] == stored_course["slug"]
+    assert result["created_at"] == stored_course["created_at"]
+    assert result["updated_at"] != stored_course["updated_at"]
+    assert repository.courses_by_slug["aws-fundamentals"] == result
+
+
+def test_update_course_allows_owning_instructor(
+    service: CourseService,
+    current_user: AuthenticatedUser,
+    stored_course: dict,
+) -> None:
+    current_user.role = "instructor"
+
+    result = service.update_course(
+        current_user=current_user,
+        slug=stored_course["slug"],
+        updates={"title": "Updated AWS Fundamentals"},
+    )
+
+    assert result["title"] == "Updated AWS Fundamentals"
+
+
+def test_update_course_raises_when_course_does_not_exist(
+    service: CourseService, current_user: AuthenticatedUser
+) -> None:
+    with pytest.raises(CourseNotFoundError) as exc_info:
+        service.update_course(
+            current_user=current_user,
+            slug="missing-course",
+            updates={"description": "Updated description."},
+        )
+
+    assert exc_info.value.args == ("missing-course",)
+
+
+def test_update_course_rejects_non_owner_instructor_without_modifying_course(
+    service: CourseService,
+    repository: FakeCourseRepository,
+    current_user: AuthenticatedUser,
+    stored_course: dict,
+) -> None:
+    current_user.id = "another-user"
+    current_user.role = "instructor"
+
+    with pytest.raises(ForbiddenActionError) as exc_info:
+        service.update_course(
+            current_user=current_user,
+            slug=stored_course["slug"],
+            updates={"description": "Unauthorized update."},
+        )
+
+    assert exc_info.value.action == "update"
+    assert repository.courses_by_slug[stored_course["slug"]] == stored_course
